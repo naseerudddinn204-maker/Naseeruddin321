@@ -73,3 +73,26 @@ audio.addEventListener("ended",()=>{nextSong()});
 audio.addEventListener("error",()=>{if(songs[current] && audio.src && !audio.src.startsWith("blob:")) showToast("Audio file missing: "+songs[current].title)});
 function formatTime(s){const m=Math.floor(s/60);const sec=Math.floor(s%60).toString().padStart(2,"0");return m+":"+sec}
 render();
+const YOUTUBE_API_KEY="YOUR_YOUTUBE_DATA_API_KEY";
+let ytPlayer=null;
+let ytReady=false;
+window.onYouTubeIframeAPIReady=()=>{ytReady=true};
+const ytTag=document.createElement("script");ytTag.src="https://www.youtube.com/iframe_api";document.head.appendChild(ytTag);
+
+async function searchYouTube(){
+ const q=document.getElementById("ytQuery").value.trim(), box=document.getElementById("ytResults");
+ if(!q){showToast("Type a song name first.");return}
+ if(YOUTUBE_API_KEY==="YOUR_YOUTUBE_DATA_API_KEY"){box.innerHTML='<div class="yt-empty">Add your YouTube Data API key in script.js first.</div>';return}
+ box.innerHTML='<div class="yt-empty">Searching YouTube...</div>';
+ try{
+  const u=new URL("https://www.googleapis.com/youtube/v3/search");
+  u.search=new URLSearchParams({part:"snippet",q,type:"video",maxResults:"8",videoEmbeddable:"true",key:YOUTUBE_API_KEY});
+  const r=await fetch(u),d=await r.json(); if(!r.ok)throw Error(d.error?.message||"API error");
+  box.innerHTML=d.items.map(v=>{const id=v.id.videoId,t=v.snippet.title.replace(/"/g,"&quot;"),c=v.snippet.channelTitle.replace(/"/g,"&quot;"),im=v.snippet.thumbnails.medium.url;return '<button class="yt-card" onclick="playYouTube(\''+id+'\')"><img src="'+im+'"><span><strong>'+t+'</strong><small>'+c+'</small></span><b>▶</b></button>'}).join("");
+ }catch(e){box.innerHTML='<div class="yt-empty">'+e.message+'</div>'}
+}
+function playYouTube(id){
+ document.getElementById("ytPlayerWrap").classList.add("visible");
+ if(ytReady){if(ytPlayer)ytPlayer.loadVideoById(id);else ytPlayer=new YT.Player("ytPlayer",{width:"100%",height:"100%",videoId:id,playerVars:{playsinline:1,rel:0}})}
+ else document.getElementById("ytPlayer").innerHTML='<iframe width="100%" height="100%" src="https://www.youtube.com/embed/'+id+'?autoplay=1&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+}
