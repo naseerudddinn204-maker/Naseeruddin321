@@ -37,7 +37,8 @@
         <p>Discover GB folk, rubab, sitar, dhol and modern sounds — all in one place.</p>
         <div class="hero-actions">
           <button class="primary" onclick="scrollToSection('trending')">Explore Songs <span>→</span></button>
-          <button class="secondary" onclick="showToast('Welcome to GB Songs — the home of GB music.')">About GB Music</button>
+          <button class="secondary" onclick="document.getElementById('mp3Upload').click()">Upload MP3s</button>
+          <input id="mp3Upload" type="file" accept=".mp3,audio/mpeg" multiple hidden onchange="handleLocalUploads(this.files)">
         </div>
       </div>
       <div class="hero-art">
@@ -71,7 +72,7 @@
     <div class="now-playing"><div class="mini-cover" id="playerCover">♪</div><div><strong id="playerTitle">Select a song</strong><span id="playerArtist">GB Songs</span></div></div>
     <div class="controls"><button onclick="previousSong()">⏮</button><button class="play" id="playBtn" onclick="togglePlay()">▶</button><button onclick="nextSong()">⏭</button></div>
     <div class="progress-wrap"><span id="currentTime">0:00</span><input id="progress" type="range" min="0" max="100" value="0"><span id="duration">0:00</span></div>
-    <audio id="audio"></audio>
+    <audio id="audio" preload="metadata"></audio>
   </div>
 
   <div class="toast" id="toast"></div>
