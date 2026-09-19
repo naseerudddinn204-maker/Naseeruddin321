@@ -76,23 +76,112 @@ render();
 const YOUTUBE_API_KEY="YOUR_YOUTUBE_DATA_API_KEY";
 let ytPlayer=null;
 let ytReady=false;
+
 window.onYouTubeIframeAPIReady=()=>{ytReady=true};
-const ytTag=document.createElement("script");ytTag.src="https://www.youtube.com/iframe_api";document.head.appendChild(ytTag);
+
+const ytTag=document.createElement("script");
+ytTag.src="https://www.youtube.com/iframe_api";
+document.head.appendChild(ytTag);
+
+function escapeHtml(value){
+ return String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+}
 
 async function searchYouTube(){
- const q=document.getElementById("ytQuery").value.trim(), box=document.getElementById("ytResults");
- if(!q){showToast("Type a song name first.");return}
- if(YOUTUBE_API_KEY==="YOUR_YOUTUBE_DATA_API_KEY"){box.innerHTML='<div class="yt-empty">Add your YouTube Data API key in script.js first.</div>';return}
+ const input=document.getElementById("ytQuery");
+ const box=document.getElementById("ytResults");
+ const q=input.value.trim();
+
+ if(!q){
+  box.innerHTML='<div class="yt-empty">Type a song name first.</div>';
+  return;
+ }
+
+ if(YOUTUBE_API_KEY==="YOUR_YOUTUBE_DATA_API_KEY"){
+  box.innerHTML='<div class="yt-empty">YouTube search is ready. Add your YouTube Data API key in script.js to enable it.</div>';
+  return;
+ }
+
  box.innerHTML='<div class="yt-empty">Searching YouTube...</div>';
+
  try{
-  const u=new URL("https://www.googleapis.com/youtube/v3/search");
-  u.search=new URLSearchParams({part:"snippet",q,type:"video",maxResults:"8",videoEmbeddable:"true",key:YOUTUBE_API_KEY});
-  const r=await fetch(u),d=await r.json(); if(!r.ok)throw Error(d.error?.message||"API error");
-  box.innerHTML=d.items.map(v=>{const id=v.id.videoId,t=v.snippet.title.replace(/"/g,"&quot;"),c=v.snippet.channelTitle.replace(/"/g,"&quot;"),im=v.snippet.thumbnails.medium.url;return '<button class="yt-card" onclick="playYouTube(\''+id+'\')"><img src="'+im+'"><span><strong>'+t+'</strong><small>'+c+'</small></span><b>▶</b></button>'}).join("");
- }catch(e){box.innerHTML='<div class="yt-empty">'+e.message+'</div>'}
+  const url=new URL("https://www.googleapis.com/youtube/v3/search");
+  url.search=new URLSearchParams({
+   part:"snippet",
+   q:q,
+   type:"video",
+   maxResults:"8",
+   videoEmbeddable:"true",
+   regionCode:"PK",
+   relevanceLanguage:"en",
+   key:YOUTUBE_API_KEY
+  });
+
+  const response=await fetch(url.toString());
+  const data=await response.json();
+
+  if(!response.ok){
+   throw new Error(data?.error?.message||"YouTube API request failed.");
+  }
+
+  if(!data.items?.length){
+   box.innerHTML='<div class="yt-empty">No YouTube videos found for this search.</div>';
+   return;
+  }
+
+  box.innerHTML=data.items.map(item=>{
+   const id=item?.id?.videoId;
+   const title=escapeHtml(item?.snippet?.title);
+   const channel=escapeHtml(item?.snippet?.channelTitle);
+   const thumbnail=escapeHtml(item?.snippet?.thumbnails?.medium?.url || item?.snippet?.thumbnails?.default?.url || "");
+
+   if(!id) return "";
+
+   return `<button class="yt-card" type="button" onclick="playYouTube('${id}')">
+     <img src="${thumbnail}" alt="">
+     <span><strong>${title}</strong><small>${channel}</small></span>
+     <b aria-hidden="true">▶</b>
+   </button>`;
+  }).join("");
+ }catch(error){
+  console.error("YouTube search error:",error);
+  box.innerHTML='<div class="yt-empty">YouTube search failed: '+escapeHtml(error.message)+'</div>';
+ }
 }
-function playYouTube(id){
- document.getElementById("ytPlayerWrap").classList.add("visible");
- if(ytReady){if(ytPlayer)ytPlayer.loadVideoById(id);else ytPlayer=new YT.Player("ytPlayer",{width:"100%",height:"100%",videoId:id,playerVars:{playsinline:1,rel:0}})}
- else document.getElementById("ytPlayer").innerHTML='<iframe width="100%" height="100%" src="https://www.youtube.com/embed/'+id+'?autoplay=1&playsinline=1" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>';
+
+function playYouTube(videoId){
+ if(!videoId) return;
+
+ const wrap=document.getElementById("ytPlayerWrap");
+ wrap.classList.add("visible");
+
+ if(ytReady && window.YT){
+  if(ytPlayer){
+   ytPlayer.loadVideoById(videoId);
+  }else{
+   ytPlayer=new YT.Player("ytPlayer",{
+    width:"100%",
+    height:"100%",
+    videoId:videoId,
+    playerVars:{
+     autoplay:1,
+     playsinline:1,
+     rel:0,
+     modestbranding:1
+    }
+   });
+  }
+ }else{
+  document.getElementById("ytPlayer").innerHTML=`<iframe
+    width="100%"
+    height="100%"
+    src="https://www.youtube.com/embed/${encodeURIComponent(videoId)}?autoplay=1&playsinline=1&rel=0"
+    title="YouTube video player"
+    allow="autoplay; encrypted-media; picture-in-picture"
+    allowfullscreen></iframe>`;
+ }
 }
+
+document.getElementById("ytQuery")?.addEventListener("keydown",event=>{
+ if(event.key==="Enter") searchYouTube();
+});
