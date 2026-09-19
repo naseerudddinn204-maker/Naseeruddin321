@@ -13,10 +13,12 @@ const songs=[
 let current=0,playing=false;
 const audio=document.getElementById("audio");
 const progress=document.getElementById("progress");
+
 function render(){
  document.getElementById("trendingGrid").innerHTML=songs.map((s,i)=>`<article class="song-card" onclick="selectSong(${i})"><div class="cover">${s.emoji}</div><div class="song-title">${s.title}</div><div class="song-artist">${s.artist}</div><button class="play-small" onclick="event.stopPropagation();selectSong(${i})">▶</button></article>`).join("");
  document.getElementById("latestList").innerHTML=songs.map((s,i)=>`<div class="latest-item"><div class="latest-cover">${s.emoji}</div><div class="latest-meta"><strong>${s.title}</strong><span>${s.artist} · New release</span></div><button onclick="selectSong(${i})">▶</button></div>`).join("");
 }
+
 async function selectSong(i){
  current=i;
  const s=songs[i];
@@ -39,6 +41,7 @@ async function selectSong(i){
    showToast("MP3 not uploaded yet: "+s.audio);
  }
 }
+
 async function togglePlay(){
  if(!audio.src){
    await selectSong(0);
@@ -56,6 +59,23 @@ async function togglePlay(){
    document.getElementById("playBtn").textContent="▶";
  }
 }
+
+function handleLocalUploads(files){
+ const mp3Files=Array.from(files).filter(file=>file.type==="audio/mpeg" || file.name.toLowerCase().endsWith(".mp3"));
+ if(!mp3Files.length){showToast("Please select MP3 files.");return;}
+ if(mp3Files.length>10){showToast("Please select up to 10 MP3 files.");return;}
+ mp3Files.forEach((file,index)=>{
+   if(songs[index]){
+     songs[index].audio=URL.createObjectURL(file);
+     const base=file.name.replace(/\.mp3$/i,"").replace(/[-_]+/g," ").trim();
+     songs[index].title=base||songs[index].title;
+     songs[index].artist="Uploaded Shina Song";
+   }
+ });
+ render();
+ showToast(mp3Files.length+" MP3 file(s) loaded in this browser.");
+}
+
 function nextSong(){selectSong((current+1)%songs.length)}
 function previousSong(){selectSong((current-1+songs.length)%songs.length)}
 function scrollToSection(id){document.getElementById(id).scrollIntoView({behavior:"smooth"})}
@@ -64,6 +84,6 @@ document.getElementById("year").textContent=new Date().getFullYear();
 progress.addEventListener("input",()=>{if(audio.duration)audio.currentTime=(progress.value/100)*audio.duration});
 audio.addEventListener("timeupdate",()=>{if(audio.duration){progress.value=(audio.currentTime/audio.duration)*100;document.getElementById("currentTime").textContent=formatTime(audio.currentTime);document.getElementById("duration").textContent=formatTime(audio.duration)}});
 audio.addEventListener("ended",()=>{nextSong()});
-audio.addEventListener("error",()=>{if(songs[current] && audio.src) showToast("Audio file missing: "+songs[current].audio)});
+audio.addEventListener("error",()=>{if(songs[current] && audio.src && !audio.src.startsWith("blob:")) showToast("Audio file missing: "+songs[current].audio)});
 function formatTime(s){const m=Math.floor(s/60);const sec=Math.floor(s%60).toString().padStart(2,"0");return m+":"+sec}
 render();
