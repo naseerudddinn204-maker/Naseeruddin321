@@ -70,21 +70,86 @@
     </section>
   </main>
 
+  <!-- Orken AI Floating Chatbot -->
+  <style>
+    #orken-ai-button {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 999999;
+      border: none;
+      border-radius: 50px;
+      padding: 14px 20px;
+      background: #111827;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 8px 30px rgba(0,0,0,.25);
+    }
 
-  <section class="section" id="orken-chatbot">
-    <div class="section-head">
-      <div><span class="eyebrow">AI ASSISTANT</span><h2>Chat with Orken AI</h2></div>
-    </div>
+    #orken-ai-window {
+      display: none;
+      position: fixed;
+      right: 20px;
+      bottom: 80px;
+      width: 390px;
+      height: 650px;
+      z-index: 999998;
+      background: #fff;
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,.3);
+    }
+
+    #orken-ai-window iframe {
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    @media (max-width: 500px) {
+      #orken-ai-window {
+        right: 10px;
+        left: 10px;
+        bottom: 80px;
+        width: auto;
+        height: 75vh;
+      }
+
+      #orken-ai-button {
+        right: 15px;
+        bottom: 15px;
+      }
+    }
+  </style>
+
+  <button id="orken-ai-button" onclick="toggleOrkenAI()">💬 Chat with Orken AI</button>
+
+  <div id="orken-ai-window">
     <iframe
       src="https://naseerudddinn204-maker.github.io/orken-ai/"
-      width="100%"
-      height="750"
-      style="border:0; border-radius:16px; overflow:hidden; display:block; background:#fff;"
       title="Orken AI Chatbot"
       allow="microphone"
       loading="lazy">
     </iframe>
-  </section>
+  </div>
+
+  <script>
+    function toggleOrkenAI() {
+      const chat = document.getElementById("orken-ai-window");
+      const button = document.getElementById("orken-ai-button");
+
+      if (chat.style.display === "block") {
+        chat.style.display = "none";
+        button.innerHTML = "💬 Chat with Orken AI";
+      } else {
+        chat.style.display = "block";
+        button.innerHTML = "✕ Close Chat";
+      }
+    }
+  </script>
+
   <div class="player" id="player">
     <div class="now-playing"><div class="mini-cover" id="playerCover">♪</div><div><strong id="playerTitle">Select a song</strong><span id="playerArtist">GB Songs</span></div></div>
     <div class="controls"><button onclick="previousSong()">⏮</button><button class="play" id="playBtn" onclick="togglePlay()">▶</button><button onclick="nextSong()">⏭</button></div>
